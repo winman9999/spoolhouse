@@ -1,0 +1,45 @@
+name: Publish Spoolhouse
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/publish.yml'
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import complete original app
+        run: |
+          python3 - <<'PY'
+          import pathlib, urllib.request
+          files = ["studio.css","tape-script.otf","massacre.css","index.html","cassette.js","icon.svg","app.js","style.css","studio.js","tracks.js","surfaces/voltage.webp","surfaces/playtime.webp","surfaces/millennium.webp","surfaces/basement.webp","audio/tape-2.mp3","audio/tape-3.mp3","audio/tape-10.mp3","audio/tape-11.mp3","audio/tape-1.mp3","audio/tape-7.mp3","audio/tape-6.mp3","audio/tape-5.mp3","audio/tape-9.mp3","audio/tape-8.mp3","audio/tape-4.mp3","surfaces/massacre/knife-skull.webp","surfaces/massacre/live.webp","surfaces/massacre/skulls.webp","surfaces/massacre/wings.webp","surfaces/massacre/wordmark.png"]
+          for name in files:
+              target = pathlib.Path('dist') / name
+              if not target.exists():
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  urllib.request.urlretrieve('https://spoolhouse-tape-deck.humbleoffering69420.chatgpt.site/' + name, target)
+          pathlib.Path('dist/.nojekyll').touch()
+          PY
+      - name: Preserve app source and assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist
+          git diff --cached --quiet || (git commit -m "Import complete Spoolhouse app and music" && git push)
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
